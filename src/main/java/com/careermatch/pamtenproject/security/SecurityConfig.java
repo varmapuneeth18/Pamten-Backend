@@ -16,9 +16,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import java.util.List;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -39,12 +42,12 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**")
                         .permitAll()
-                        .requestMatchers(
-                                "/api/jobs/v1/post",
-                                "/api/jobs/v1/update/**",
-                                "/api/jobs/v1/delete/**"
-                                "api/profile/v1/status/{userId}"
-                        ).hasAuthority("Recruiter")
+                        // Restrict job mutation endpoints to Recruiter role
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/v1/post").hasAuthority("Recruiter")
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/v1/**").hasAuthority("Recruiter")
+                        .requestMatchers(HttpMethod.DELETE, "/api/jobs/v1/**").hasAuthority("Recruiter")
+                        // Profile status (for recruiter onboarding checks)
+                        .requestMatchers(HttpMethod.GET, "/api/profile/v1/status/**").hasAuthority("Recruiter")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
